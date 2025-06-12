@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import ComparisonResult from './components/ComparisonResult';
+import LeadComparisonResult from './components/LeadComparisonResult';
 import Papa from 'papaparse';
-<img src="/grow_pro_agency_logo.jpg" alt="Grow Pro Agency" className="h-12 mb-4 mx-auto" />
+import { parseCSVWithEncoding } from './utils/csvComparer';
 
 export default function Home() {
   const [csv1, setCsv1] = useState([]);
@@ -10,16 +11,20 @@ export default function Home() {
   const [file1Name, setFile1Name] = useState('');
   const [file2Name, setFile2Name] = useState('');
   const [hasCompared, setHasCompared] = useState(false);
+  const [comparisonMode, setComparisonMode] = useState('leads'); // 'standard' or 'leads'
 
   const handleCompare = () => {
-    const diffs = [];
-    const maxLength = Math.max(csv1.length, csv2.length);
-    for (let i = 0; i < maxLength; i++) {
-      if (JSON.stringify(csv1[i]) !== JSON.stringify(csv2[i])) {
-        diffs.push(i);
+    if (comparisonMode === 'standard') {
+      // Standard row-by-row comparison
+      const diffs = [];
+      const maxLength = Math.max(csv1.length, csv2.length);
+      for (let i = 0; i < maxLength; i++) {
+        if (JSON.stringify(csv1[i]) !== JSON.stringify(csv2[i])) {
+          diffs.push(i);
+        }
       }
+      setDifferences(diffs);
     }
-    setDifferences(diffs);
     setHasCompared(true);
   };
 
@@ -44,11 +49,42 @@ export default function Home() {
             CSV Comparison Tool
           </h1>
           <p className="text-lg text-blue-200">
-            Upload two CSV files and compare their differences with ease
+            {comparisonMode === 'leads'
+              ? 'Compare Facebook Ads leads with HighLevel CRM to find missing leads'
+              : 'Upload two CSV files and compare their differences with ease'
+            }
           </p>
           <p className="text-sm text-blue-200">
             For internal use only @ Grow Pro Agency
           </p>
+        </div>
+
+        {/* Comparison Mode Selector */}
+        <div className="flex justify-center mb-8">
+          <div className="bg-white/10 backdrop-blur-lg rounded-lg p-1 border border-white/20">
+            <div className="flex space-x-1">
+              <button
+                onClick={() => setComparisonMode('leads')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  comparisonMode === 'leads'
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'text-blue-200 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                Lead Comparison
+              </button>
+              <button
+                onClick={() => setComparisonMode('standard')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  comparisonMode === 'standard'
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'text-blue-200 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                Standard Comparison
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* File Upload Section */}
@@ -56,17 +92,27 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* First File Upload */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-blue-100">First CSV File</label>
+              <label className="block text-sm font-medium text-blue-100">
+                {comparisonMode === 'leads' ? 'Facebook Ads CSV File' : 'First CSV File'}
+              </label>
               <input
                 type="file"
                 accept=".csv"
                 onChange={(e) => {
                   if (e.target.files[0]) {
                     setFile1Name(e.target.files[0].name);
-                    Papa.parse(e.target.files[0], {
-                      header: true,
-                      complete: (results) => setCsv1(results.data)
-                    });
+                    if (comparisonMode === 'leads') {
+                      // Use advanced parsing for lead comparison
+                      parseCSVWithEncoding(e.target.files[0], (results) => {
+                        setCsv1(results.data);
+                      });
+                    } else {
+                      // Use standard parsing
+                      Papa.parse(e.target.files[0], {
+                        header: true,
+                        complete: (results) => setCsv1(results.data)
+                      });
+                    }
                   }
                 }}
                 className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-purple-600 file:to-blue-600 file:text-white hover:file:from-purple-700 hover:file:to-blue-700 file:cursor-pointer cursor-pointer bg-white/5 backdrop-blur border border-white/20 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-purple-400 hover:bg-white/10 transition-all duration-200"
@@ -78,17 +124,27 @@ export default function Home() {
 
             {/* Second File Upload */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-blue-100">Second CSV File</label>
+              <label className="block text-sm font-medium text-blue-100">
+                {comparisonMode === 'leads' ? 'HighLevel CRM CSV File' : 'Second CSV File'}
+              </label>
               <input
                 type="file"
                 accept=".csv"
                 onChange={(e) => {
                   if (e.target.files[0]) {
                     setFile2Name(e.target.files[0].name);
-                    Papa.parse(e.target.files[0], {
-                      header: true,
-                      complete: (results) => setCsv2(results.data)
-                    });
+                    if (comparisonMode === 'leads') {
+                      // Use advanced parsing for lead comparison
+                      parseCSVWithEncoding(e.target.files[0], (results) => {
+                        setCsv2(results.data);
+                      });
+                    } else {
+                      // Use standard parsing
+                      Papa.parse(e.target.files[0], {
+                        header: true,
+                        complete: (results) => setCsv2(results.data)
+                      });
+                    }
                   }
                 }}
                 className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-purple-600 file:to-blue-600 file:text-white hover:file:from-purple-700 hover:file:to-blue-700 file:cursor-pointer cursor-pointer bg-white/5 backdrop-blur border border-white/20 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-purple-400 hover:bg-white/10 transition-all duration-200"
@@ -113,8 +169,12 @@ export default function Home() {
 
         {/* Results Section */}
         <div className="mt-10">
-          {hasCompared && (
-            <ComparisonResult csv1={csv1} csv2={csv2} differences={differences} />
+          {comparisonMode === 'leads' ? (
+            <LeadComparisonResult csv1={csv1} csv2={csv2} />
+          ) : (
+            hasCompared && (
+              <ComparisonResult csv1={csv1} csv2={csv2} differences={differences} />
+            )
           )}
         </div>
       </div>
